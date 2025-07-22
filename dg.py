@@ -33,7 +33,7 @@ def main():
             os.getenv("DG_API_KEY")
         )
 
-        dg_connection = deepgram.listen.live.v("1")
+        dg_connection = deepgram.listen.websocket.v("1")
 
         dg_connection.on(LiveTranscriptionEvents.Transcript, on_message)
         dg_connection.on(LiveTranscriptionEvents.Metadata, on_metadata)
