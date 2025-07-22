@@ -104,6 +104,7 @@ this to track position of the context.")
 (define-minor-mode esi-dictate-mode
   "Toggle esi-dictate mode."
   :init-value nil
+  :lighter ""
   :keymap esi-dictate-mode-map)
 
 (defun esi-dictate--write-fix (edited-content)
