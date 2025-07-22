@@ -34,6 +34,11 @@
 (require 'llm)
 (require 'llm-openai)
 
+(defcustom esi-dictate-script
+  (expand-file-name "dg.py"
+                    (file-name-directory (or load-file-name
+                                             buffer-file-name)))
+  "File path to the dg.py (deepgram client) script.")
 
 (defcustom esi-dictate-dg-api-key nil
   "API Key for Deepgram."
@@ -217,10 +222,11 @@ in current buffer."
   (interactive)
   (esi-dictate--clear-process)
   (setq esi-dictate--dg-process
-        (let ((process-environment (cons (format "DG_API_KEY=%s" esi-dictate-dg-api-key) process-environment)))
+        (let ((default-directory (file-name-directory esi-dictate-script))
+              (process-environment (cons (format "DG_API_KEY=%s" esi-dictate-dg-api-key) process-environment)))
           (make-process :name "esi-dictate-dg"
                         :buffer "*esi-dictate-dg*"
-                        :command (list "dg.py")
+                        :command (list "uv" "run" esi-dictate-script)
                         :filter #'esi-dictate-filter-fn)))
   (esi-dictate-mode)
   (message "[esi] Starting dictation mode ..."))
