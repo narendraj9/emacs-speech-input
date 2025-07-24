@@ -2,8 +2,7 @@
 
 import os
 
-from deepgram import (DeepgramClient, LiveOptions, LiveTranscriptionEvents,
-                      Microphone)
+from deepgram import DeepgramClient, LiveOptions, LiveTranscriptionEvents, Microphone
 
 
 def on_message(self, result, **kwargs):
@@ -14,14 +13,18 @@ def on_message(self, result, **kwargs):
 
     print(f"Output: {result.to_json()}")
 
+
 def on_metadata(self, metadata, **kwargs):
     print(f"\n\n{metadata}\n\n")
+
 
 def on_speech_started(self, speech_started, **kwargs):
     print(f"\n\n{speech_started}\n\n")
 
+
 def on_utterance_end(self, utterance_end, **kwargs):
     print(f"\n\n{utterance_end}\n\n")
+
 
 def on_error(self, error, **kwargs):
     print(f"\n\n{error}\n\n")
@@ -29,9 +32,7 @@ def on_error(self, error, **kwargs):
 
 def main():
     try:
-        deepgram = DeepgramClient(
-            os.getenv("DG_API_KEY")
-        )
+        deepgram = DeepgramClient(os.getenv("API_KEY"))
 
         dg_connection = deepgram.listen.websocket.v("1")
 
@@ -65,6 +66,7 @@ def main():
     except Exception as e:
         print(f"Could not open socket: {e}")
         return
+
 
 if __name__ == "__main__":
     main()

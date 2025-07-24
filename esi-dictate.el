@@ -35,12 +35,12 @@
 (require 'llm-openai)
 
 (defcustom esi-dictate-script
-  (expand-file-name "dg.py"
+  (expand-file-name "openai_realtime_api.py"
                     (file-name-directory (or load-file-name
                                              buffer-file-name)))
   "File path to the dg.py (deepgram client) script.")
 
-(defcustom esi-dictate-dg-api-key nil
+(defcustom esi-dictate-transcribe-api-key nil
   "API Key for Deepgram."
   :type 'string)
 
@@ -59,18 +59,20 @@ finalized from the ASR."
 (defvar esi-dictate--dg-process nil
   "Process holding the deepgram script")
 
-(defcustom esi-dictate-llm-prompt "You are a dictation assistant, you will be given transcript by the user with speech disfluencies, minor mistakes, and edits and you have to return a corrected transcript. The user might give you their stream of consciousness and you have to ensure that you correctly identify a request to edit and don't misfire. You don't have to generate any new information, just ensure fixes in spoken transcripts and edits as asked."
+(defcustom esi-dictate-llm-prompt
+  "You are a dictation assistant, you will be given transcript by the user with speech disfluencies, minor mistakes, and edits and you have to return a corrected transcript. The user might give you their stream of consciousness and you have to ensure that you correctly identify a request to edit and don't misfire. You don't have to generate any new information, just ensure fixes in spoken transcripts and edits as asked."
   "System prompt for the LLM editor."
   :type 'string)
 
-(defcustom esi-dictate-fix-examples (list (cons "I wan to write about umm something related to food. My name is name is Abhinav"
-                                                "I want to write about umm something related to food. My name is Abhinav.")
-                                          (cons "Okay we will start. Let's write something about chairs. No not chairs, make it tables."
-                                                "Let's write something about tables.")
-                                          (cons "I want to write something that's difficult to transcribe and then try correcting that. Write my name as abcd. No separate the letters with . please"
-                                                "I want to write something that's difficult to transcribe and then try correcting that. Write my name as a.b.c.d.")
-                                          (cons "hi easy, what are you doing? It's e s i."
-                                                "hi esi, what are you doing?"))
+(defcustom esi-dictate-fix-examples
+  (list (cons "I wan to write about umm something related to food. My name is name is Abhinav"
+              "I want to write about umm something related to food. My name is Abhinav.")
+        (cons "Okay we will start. Let's write something about chairs. No not chairs, make it tables."
+              "Let's write something about tables.")
+        (cons "I want to write something that's difficult to transcribe and then try correcting that. Write my name as abcd. No separate the letters with . please"
+              "I want to write something that's difficult to transcribe and then try correcting that. Write my name as a.b.c.d.")
+        (cons "hi easy, what are you doing? It's e s i."
+              "hi esi, what are you doing?"))
   "Example inputs and outputs for few shot learning of auto
 edits. Change this to impact the behaviour of dictation
 intelligence."
@@ -165,14 +167,14 @@ instructions."
 (defun esi-dictate-insert (transcription-item)
   "Insert transcription object in the current buffer preserving the
 semantics of intermittent results."
-  (let* ((id (alist-get 'start transcription-item))
-         (text (alist-get 'transcript (aref (alist-get 'alternatives (alist-get 'channel transcription-item)) 0)))
+  (let* ((id (alist-get 'item_id transcription-item))
+         (text (alist-get 'transcript transcription-item))
          (prev-item (when (> (overlay-end esi-dictate-context-overlay) (point-min))  ;; Ensure the overlay isn't at (point-min)
                       (get-text-property (- (overlay-end esi-dictate-context-overlay) 1) 'esi-dictate-transcription-item))))
     ;; If previous item and current are the same utterance, delete the previous
     ;; item and then insert new one. This handles intermittent results from the
     ;; ASR.
-    (when (and prev-item (= id (alist-get 'start prev-item)))
+    (when (and prev-item (equal id (alist-get 'start prev-item)))
       (delete-region (get-text-property (- (overlay-end esi-dictate-context-overlay) 1) 'esi-dictate-start) (overlay-end esi-dictate-context-overlay)))
 
     (let ((insertion-pos (overlay-end esi-dictate-context-overlay)))
@@ -224,7 +226,7 @@ in current buffer."
   (esi-dictate--clear-process)
   (setq esi-dictate--dg-process
         (let ((default-directory (file-name-directory esi-dictate-script))
-              (process-environment (cons (format "DG_API_KEY=%s" esi-dictate-dg-api-key) process-environment)))
+              (process-environment (cons (format "API_KEY=%s" esi-dictate-transcribe-api-key) process-environment)))
           (make-process :name "esi-dictate-dg"
                         :buffer "*esi-dictate-dg*"
                         :command (list "uv" "run" esi-dictate-script)
